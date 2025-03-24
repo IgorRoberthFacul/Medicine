@@ -12,31 +12,25 @@ router.get('/doctors', verifyToken, async (req, res) => {
         const doctors = await DoctorService.getAllDoctors();
 
         if (!doctors || doctors.length === 0) {
-            return res.status(404).send({ message: "Not found Doctor" });
+            return res.status(404).send(error);
         }
         res.status(200).send(doctors);
     } catch (error) {
-        console.error("Mistake when looking for doctors:", error);
-        res.status(500).send({ message: "Internal server error" });
+        console.error(error);
+        res.status(500).send({ message: error.message});
     }
 });
 
 router.get('/getDoctor/:id', verifyToken, async (req, res) => {
     const { id } = req.params;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(400).json({ message: "Invalid ID" });
-    }
-
     try {
-        const doctor = await Doctor.findById(id);
-        if (!doctor) {
-            return res.status(404).send({ message: "Not found Doctor" });
-        }
-        res.send(doctor);
+        const doctor = await DoctorService.getDoctor(id); 
+
+        res.status(200).send(doctor);
     } catch (error) {
         console.error(error);
-        res.status(500).send(error);
+        res.status(error.status || 500).json({ message: error.message});
     }
 });
 
@@ -56,14 +50,10 @@ router.post('/postDoctor', verifyToken, async (req, res) => {
             phone
         });
 
-        if (doctor.error) {
-            return res.status(400).json({ message: doctor.error });
-        }
-
         res.status(201).send(doctor);
     } catch (error) {
         console.error(error);
-        res.status(500).send("Failure to register a doctor " + error);
+        res.status(error.status || 500).json({ message: error.message || "Failure to register doctor" });
     }
 });
 
@@ -72,19 +62,10 @@ router.put('/doctors/:id', verifyToken, async (req, res) => {
     const { name, login, password, medicalSpecialty, medicalRegistration, email, phone } = req.body;
 
     if (!name && !login && !password && !medicalSpecialty && !medicalRegistration && !email && !phone) {
-        return res.status(400).json({ message: "Not data to update has been sent" });
+        return res.status(400).json({ message: "No data to update has been sent" });
     }
 
     try {
-        if (!mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(400).json({ message: "Invalid ID" });
-        }
-
-        const existingDoctor = await DoctorService.updateDoctor(id, req.body);
-        if (!existingDoctor) {
-            return res.status(404).json({ message: "Not found Doctor" });
-        }
-
         const hashPassword = password ? await bcrypt.hash(password, 10) : undefined;
 
         const updateData = {
@@ -100,20 +81,22 @@ router.put('/doctors/:id', verifyToken, async (req, res) => {
             updateData.password = hashPassword;
         }
 
-        const updatedDoctor = await DoctorService.updateDoctor(id, updateData);
-        if (!updatedDoctor) {
-            return res.status(500).json({ message: "Error updating Doctor" });
-        }
+        const result = await DoctorService.updateDoctor(id, updateData);
 
-        res.status(200).json({
-            message: "Doctor successfully updated",
-            doctor: updatedDoctor
+        if (result.status !== 200) {
+            return res.status(result.status).json({ message: result.message });
+        }
+        res.status(result.status).json({
+            message: result.message,
+            doctor: result.doctor
         });
+
     } catch (error) {
-        console.error("Error updating Doctor", error);
+        console.error(error);
         res.status(500).json({ message: "Error updating doctor", error });
     }
 });
+
 
 router.delete('/doctors/:id', verifyToken, async (req, res) => {
     const { id } = req.params;
@@ -123,13 +106,13 @@ router.delete('/doctors/:id', verifyToken, async (req, res) => {
     }
 
     try {
-        const doctor = await DoctorService.deleteDoctor(id);
+        const response = await DoctorService.deleteDoctor(id);
 
-        if (!doctor) {
-            return res.status(404).send({ message: "Not found Doctor" });
+        if (response.status !== 200) {
+            return res.status(response.status).send({ message: response.message });
         }
 
-        res.send({ message: "Doctor successfully excluded" });
+        res.status(200).send({ message: response.message });
     } catch (error) {
         console.error(error);
         res.status(500).send({ message: error.message || "Internal server error" });

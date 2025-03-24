@@ -19,11 +19,11 @@ router.get('/getAppointment/:id', verifyToken, async (req, res) => {
    try {
        const appointment = await AppointmentService.getAppointment(req.params.id);
        if (!appointment) {
-           return res.status(404).json({ message: "Appointment not found" });
+           return res.status(404).send();
        }
        res.json(appointment);
    } catch (error) {
-       console.error("Error when searching for an appointment:", error);
+       console.error(error);
        res.status(500).json({ error: error.message });
    }
 });
