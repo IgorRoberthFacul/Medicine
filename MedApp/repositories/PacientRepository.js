@@ -1,4 +1,5 @@
 import Pacient from "../models/Pacient.js";
+import mongoose from "mongoose";
 
 const getAllPacient = async () => {
     return await Pacient.find();

@@ -4,7 +4,7 @@ import mongoose from 'mongoose';
 
 const getAllPrescriptions = async () => {
     try {
-        return await PrescriptionRepository.getAllPrescriptions();  // Agora utilizando o método correto do repositório
+        return await PrescriptionRepository.getAllPrescriptions(); 
     } catch (error) {
         throw new Error('Error fetching all prescriptions');
     }
@@ -12,13 +12,25 @@ const getAllPrescriptions = async () => {
 
 const getPrescription = async (id) => {
     try {
-        return await PrescriptionRepository.getPrescription(id);  // Certifique-se de usar o método correto do repositório
+    
+        const prescription = await PrescriptionRepository.getPrescription(id);
+
+        if (!prescription) {
+            throw new Error("Prescription not found");
+        }
+        return prescription;
+        
     } catch (error) {
-        throw new Error('Error fetching the prescription');
+        throw new Error('Error fetching the prescription: ' + error.message);
     }
 };
 
 const savePrescription = async ({ date, appointmentId, medicine, dosage, instructions }) => {
+
+    if (!date || !appointmentId || !medicine || !dosage) {
+        return { success: false, message: 'All fields (date, appointmentId, medicine, dosage) are required.' };
+    }
+
     try {
         const newPrescription = new Prescription({
             date,
@@ -27,15 +39,21 @@ const savePrescription = async ({ date, appointmentId, medicine, dosage, instruc
             dosage,
             instructions,
         });
+
         await newPrescription.save();
-        return newPrescription;
+        return { success: true, prescription: newPrescription };
+
     } catch (error) {
-        throw new Error('Error saving the prescription');
+        return { success: false, message: 'Error saving the prescription', error };
     }
 };
 
 const updatePrescription = async (id, { date, appointmentId, medicine, dosage, instructions }) => {
     try {
+        if (!date || !appointmentId || !medicine || !dosage) {
+            return { success: false, message: 'All fields (date, appointmentId, medicine, dosage) are required.' };
+        }
+
         const updatedPrescription = await Prescription.findByIdAndUpdate(
             id, 
             { date, appointmentId, medicine, dosage, instructions }, 
@@ -43,22 +61,26 @@ const updatePrescription = async (id, { date, appointmentId, medicine, dosage, i
         );
 
         if (!updatedPrescription) {
-            throw new Error("Prescription not found");
+            return { success: false, message: "Prescription not found" };
         }
-
-        return updatedPrescription;
+        return { success: true, message: "Prescription updated successfully", prescription: updatedPrescription };
+    
     } catch (error) {
-        throw new Error("Error updating the prescription: " + error.message);
+        return { success: false, message: "Error updating the prescription", error: error.message };
     }
 };
-
 
 const deletePrescription = async (id) => {
     try {
         const deletedPrescription = await Prescription.findByIdAndDelete(id);
-        return deletedPrescription;
+
+        if (!deletedPrescription) {
+            return { success: false, message: "Prescription not found to delete" };
+        }
+
+        return { success: true, message: "Prescription deleted successfully" };
     } catch (error) {
-        throw new Error('Error deleting the prescription');
+        return { success: false, message: "Error deleting the prescription", error: error.message };
     }
 };
 

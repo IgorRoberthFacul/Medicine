@@ -11,45 +11,40 @@ router.get('/pacient', verifyToken, async(req,res) =>{
 
     try {
         const pacient = await PacientService.getAllPacient();
-        res.json(pacient);
+        if (!pacient || pacient.length === 0) {
+            return res.status(404).send(error);
+        }
+        res.status(200).send(pacient);
     } catch (error) {
-        console.log(error);
-        res.status(500).send(error);
+        console.error(error);
+        res.status(500).send({message: error.message});
     }
 
 });
 
 router.get('/getPacient/:id', verifyToken, async (req, res) => {
     const { id } = req.params;
-    try {
 
-        const pacient = await Pacient.findById(id);
-        if (!pacient) {
-            return res.status(404).json({ message: "Pacient not found" });
-        }
-        res.json(pacient);
+    try {
+        const pacient = await PacientService.getPacient(id);
+        res.status(200).send(pacient);
     } catch (error) {
-        console.log(error);
-        res.status(500).send(error);
+        console.error(error);
+        res.status(error.status || 500).json({ message: error.message });
     }
 });
 
 router.post('/pacient', verifyToken, async (req, res) => {
     try {
         const { name, birthDate, email, phone } = req.body;
-
-        if (!name || !birthDate || !email || !phone) {
-            return res.status(400).json({ message: "All fields are mandatory" });
-        }
-
         const newPacient = await PacientService.savePacient({ name, birthDate, email, phone });
         res.status(201).json(newPacient);
+
     } catch (error) {
-        console.log("Error in saving patient: ", error);
-        res.status(500).send(error.message);
+        console.error(error);
+        return res.status(400).json({ message: error.message});
     }
 });
-
 
 router.put('/pacient/:id', verifyToken, async (req, res) => {
     const { id } = req.params;
@@ -57,34 +52,28 @@ router.put('/pacient/:id', verifyToken, async (req, res) => {
 
     try {
         const updatedPacient = await PacientService.updatePacient(id, { name, birthDate, email, phone });
-
-        if (!updatedPacient) {
-            return res.status(404).json({ message: "Patient not found" });
-        }
-
         res.json(updatedPacient);
     } catch (error) {
         console.log(error);
-        res.status(500).send(error);
+        res.status(400).json({message: error.message});
     }
 });
  
-router.delete('/pacient/:id', verifyToken, async(req, res) => {
+router.delete('/pacient/:id', verifyToken, async (req, res) => {
     const { id } = req.params;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(400).send({ message: "Invalid ID" });
+    try {
+        const result = await PacientService.deletePacient(id);
+
+        if (result.success) {
+            return res.send({ message: result.message, pacient: result.pacient });
         }
 
-    try {
-        const pacient = await PacientService.deletePacient(id);
-        if (!pacient) {
-            return res.status(404).json({ message: "Patient not found" });
-        }
-        res.send({ message: 'Patient successfully excluded.', pacient });
+        return res.status(400).json({ message: result.message });
+
     } catch (error) {
         console.log(error);
-        res.status(500).send(error);
+        return res.status(500).json({ message: "An unexpected error occurred." });
     }
 });
 

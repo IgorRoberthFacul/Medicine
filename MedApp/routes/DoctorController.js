@@ -97,7 +97,6 @@ router.put('/doctors/:id', verifyToken, async (req, res) => {
     }
 });
 
-
 router.delete('/doctors/:id', verifyToken, async (req, res) => {
     const { id } = req.params;
 

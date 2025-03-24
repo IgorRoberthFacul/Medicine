@@ -15,12 +15,12 @@ const getAllDoctors = async () => {
 
 const getDoctor = async (id) => {
     if (!mongoose.Types.ObjectId.isValid(id)) {
-        throw { status: 400, message: "Invalid ID" };  // Erro de ID inválido
+        throw { status: 400, message: "Invalid ID" }; 
     }
 
     const doctor = await doctorRepository.getDoctor(id);
     if (!doctor) {
-        throw { status: 404, message: "Doctor not found" };  // Erro de não encontrado
+        throw { status: 404, message: "Doctor not found" }; 
     }
 
     return doctor;
@@ -37,7 +37,6 @@ const saveDoctor = async ({ name, login, password, medicalSpecialty, medicalRegi
         throw { status: 500, message: "Failed to save doctor: " + error.message };
     }
 };
-
 
 const updateDoctor = async (id, data) => {
     try {
