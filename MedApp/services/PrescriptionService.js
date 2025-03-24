@@ -1,5 +1,11 @@
+import doctor from "../models/Doctor.js";
 import Prescription from "../models/Prescription.js";
 import PrescriptionRepository from "../repositories/PrescriptionRepository.js";
+import AppointmentService from "../services/AppointmentService.js";
+import PacientService from "../services/PacientService.js";
+import DoctorService from "../services/DoctorService.js";
+import PDFdocument from "pdfkit";
+import fs from 'fs';
 import mongoose from 'mongoose';
 
 const getAllPrescriptions = async () => {
@@ -48,7 +54,7 @@ const savePrescription = async ({ date, appointmentId, medicine, dosage, instruc
     }
 };
 
-const updatePrescription = async (id, { date, appointmentId, medicine, dosage, instructions }) => {
+const updatePrescription = async (id, { date, appointmentId, medicine, dosage, instructions, file }) => {
     try {
         if (!date || !appointmentId || !medicine || !dosage) {
             return { success: false, message: 'All fields (date, appointmentId, medicine, dosage) are required.' };
@@ -56,7 +62,7 @@ const updatePrescription = async (id, { date, appointmentId, medicine, dosage, i
 
         const updatedPrescription = await Prescription.findByIdAndUpdate(
             id, 
-            { date, appointmentId, medicine, dosage, instructions }, 
+            { date, appointmentId, medicine, dosage, instructions, file}, 
             { new: true, runValidators: true }
         );
 
@@ -84,12 +90,38 @@ const deletePrescription = async (id) => {
     }
 };
 
+const generatePrescriptionFile = async (prescription) => {
+    const appointment = await AppointmentService.getAppointment(prescription.appointmentId);
+    const pacient = await PacientService.getPacient(appointment.pacientID);
+    const doctor = await DoctorService.getDoctor(appointment.doctor);
+    
+    const id = prescription._id;
+    const document = new PDFdocument({font: 'Courier'});
+    const filePath = "C:/Users/igorr/OneDrive/Desktop/Aula pdf Facul/Programação II/MediApp" + id + ".pdf";
+
+    document.pipe(fs.createWriteStream(filePath));
+    document.fontSize(14).text("Pacient Name: " + pacient.name);
+    document.fontSize(14).text("Doctor Name: " + doctor.name);
+
+    const recipe = "Medicine: " + prescription.medicine;
+    document.fontSize(14).text(recipe);
+
+    document.fontSize(14).text("Dose: " + prescription.dosage);
+    document.fontSize(14).text("Instructions: " + prescription.instructions);
+
+    document.end();
+
+    return prescription;
+
+}
+
 const prescriptionService = {
     getAllPrescriptions,
     getPrescription,
     savePrescription,
     updatePrescription,
     deletePrescription,
+    generatePrescriptionFile
 };
 
 export default prescriptionService;

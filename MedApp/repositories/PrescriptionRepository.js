@@ -37,11 +37,11 @@ const savePrescription = async ({ date, appointmentId, medicine, dosage, instruc
     }
 }
 
-const updatePrescription = async (id, { date, appointmentId, medicine, dosage, instructions }) => {
+const updatePrescription = async (id, { date, appointmentId, medicine, dosage, instructions, file}) => {
     try {
         const updatedPrescription = await Prescription.findByIdAndUpdate(
             id,
-            { date, appointmentId, medicine, dosage, instructions },
+            { date, appointmentId, medicine, dosage, instructions, file},
             { new: true, runValidators: true }
         );
 

@@ -1,4 +1,6 @@
 import { mongoose } from "mongoose";
+import pacient from "./Pacient.js";
+import Doctor from "./Doctor.js";
 
 const Schema = mongoose.Schema;
 const appointmentSchema = new Schema({
